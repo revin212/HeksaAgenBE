@@ -125,25 +125,29 @@ namespace HeksaAgen.Controllers
             return mimeType;
         }
 
-        [HttpPost("UploadAttachment")]
-        //[Consumes("multipart/form-data")]
-        public IActionResult UploadAttachments([FromForm] IFormFile attachmentFile)
+        [HttpPost("UploadAttachments")]
+        public IActionResult UploadAttachments([FromForm] IFormFileCollection attachmentFiles)
         {
             try
             {
-                var savePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/upload/", attachmentFile.FileName);
-                InsertAttachmentDTO attachment = new InsertAttachmentDTO();
-                attachment.FileName = attachmentFile.FileName;
-                attachment.FilePath = savePath;
-                attachment.FileType = attachmentFile.ContentType;
-                attachment.AttachmentType = attachmentFile.ContentType;
-
-                using (var stream = new FileStream(savePath, FileMode.Create))
+                List<InsertAttachmentDTO> attachments = new List<InsertAttachmentDTO>();
+                for (int i = 0; i < attachmentFiles.Count; i++)
                 {
-                    attachmentFile.CopyTo(stream);
+                    var savePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/upload/", attachmentFiles[i].FileName);
+                    InsertAttachmentDTO attachment = new InsertAttachmentDTO();
+                    attachment.FileName = attachmentFiles[i].FileName;
+                    attachment.FilePath = savePath;
+                    attachment.FileType = attachmentFiles[i].ContentType;
+                    attachment.AttachmentType = attachmentFiles[i].ContentType;
+
+                    using (var stream = new FileStream(savePath, FileMode.Create))
+                    {
+                        attachmentFiles[i].CopyTo(stream);
+                    }
+                    attachments.Add(attachment);
                 }
 
-                return Ok(attachment);
+                return Ok(attachments);
             }
             catch
             {
@@ -151,31 +155,38 @@ namespace HeksaAgen.Controllers
             }
         }
 
-        [HttpDelete("DeleteAttachment")]
-        public IActionResult DeleteAttachment(string attachmentFileName)
+        [HttpDelete("DeleteAttachments")]
+        public IActionResult DeleteAttachments([FromBody] DeleteAttachmentsDTO deleteAttachments)
         {
             try
             {
-                if (attachmentFileName == null || attachmentFileName == "")
+                if (deleteAttachments.attachmentFileNames == null || deleteAttachments.attachmentFileNames.Count == 0)
                     return BadRequest("File name must not be null");
 
-                string deletePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/upload/", attachmentFileName);
-
-                System.GC.Collect();
-                System.GC.WaitForPendingFinalizers();
-                using (FileStream fs = new FileStream(deletePath, FileMode.Open))
+                for (int i = 0; i < deleteAttachments.attachmentFileNames.Count; i++)
                 {
+                    if(deleteAttachments.deleteIndex[i] == true)
+                    {
+                        string deletePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/upload/", deleteAttachments.attachmentFileNames[i]);
+
+                        System.GC.Collect();
+                        System.GC.WaitForPendingFinalizers();
+                        using (FileStream fs = new FileStream(deletePath, FileMode.Open))
+                        {
+                        }
+
+                        if (IoFile.Exists(deletePath))
+                        {
+                            IoFile.Delete(deletePath);
+                        }
+                    }
                 }
 
-                if (IoFile.Exists(deletePath))
-                {
-                    IoFile.Delete(deletePath);
-                    return StatusCode(201, "Attachment file deleted");
-                } 
-                else
-                {
-                    return NotFound("File not found");
-                }            
+                return StatusCode(201, "Attachment files deleted");
+            }
+            catch (FileNotFoundException e)
+            {
+                return StatusCode(201, "Attachment files deleted");
             }
             catch (Exception err)
             {

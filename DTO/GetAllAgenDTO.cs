@@ -1,7 +1,6 @@
-﻿using System;
+﻿using HeksaAgen.Model;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace HeksaAgen.DTO
 {
@@ -13,5 +12,6 @@ namespace HeksaAgen.DTO
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string IdCard { get; set; } = string.Empty;
+        public List<Attachment> Attachments { get; set; }
     }
 }

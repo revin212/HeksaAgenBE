@@ -20,6 +20,7 @@ namespace HeksaAgen.Repository
         public List<Agen> GetAllAgen()
         {
             return _context.Agens
+                .Include(a => a.Attachments)
                 .ToList();
         }
 
